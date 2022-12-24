@@ -42,6 +42,12 @@ impl Service<Request> for KVStore {
             Request::Query(query) => Response::Query(self.query(query.data)),
             Request::DeliverTx(deliver_tx) => Response::DeliverTx(self.deliver_tx(deliver_tx.tx)),
             Request::Commit => Response::Commit(self.commit()),
+            Request::PrepareProposal(proposal) => {
+                Response::PrepareProposal(response::PrepareProposal { txs: proposal.txs })
+            }
+            Request::ProcessProposal(_) => {
+                Response::ProcessProposal(response::ProcessProposal::Accept)
+            }
             // unhandled messages
             Request::Flush => Response::Flush,
             Request::Echo(_) => Response::Echo(Default::default()),
@@ -53,12 +59,6 @@ impl Service<Request> for KVStore {
             Request::OfferSnapshot(_) => Response::OfferSnapshot(Default::default()),
             Request::LoadSnapshotChunk(_) => Response::LoadSnapshotChunk(Default::default()),
             Request::ApplySnapshotChunk(_) => Response::ApplySnapshotChunk(Default::default()),
-            // response::SetOption is missing a Default impl as of tm-rs 0.26
-            Request::SetOption(_) => Response::SetOption(response::SetOption {
-                code: tendermint::abci::Code::Ok,
-                log: String::new(),
-                info: String::new(),
-            }),
         };
         tracing::info!(?rsp);
         async move { Ok(rsp) }.boxed()
